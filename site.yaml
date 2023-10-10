@@ -1,0 +1,101 @@
+---
+  - hosts: all
+    become: true
+    become_method: sudo
+    gather_facts: yes
+    tasks:
+      - name: apt update
+        apt:
+          update_cache: true
+
+
+  - name: deploy flask app
+    hosts: webservers
+    become: yes
+    become_method: sudo
+    tasks:
+      - name: update apt cache
+        apt:
+          update_cache: yes
+
+#      - name: Install Python3
+ ##       apt:
+
+#       state: latest
+
+      - name: install  python3-pip
+        apt:
+          name: python3-pip
+          state: latest
+          update_cache: yes
+
+            #    - name: Create Flask app directory
+            #        file:
+            #          path: /home/ubuntu/flask-app
+            #          state: directory
+            #          owner: ubuntu
+            #          group: ubuntu
+
+      - name: Install Flask
+        become: yes
+        pip:
+          executable: pip3
+          name: flask
+          state: latest
+
+            #      - name: change directory
+        #        shell: cd /home/ubuntu/flask-app
+
+            #      - name: Create virtual environment
+            #        command: python3 -m venv /home/ubuntu/venv
+
+            #      - name: Activate virtual environment
+            #        shell: . /home/ubuntu/flask-app/venv/bin/activate
+
+
+      - name: Installing gunicorn
+        apt:
+          name: gunicorn
+
+      - name: copy flask file
+        copy:
+          src: /$PWD/app2.py
+            #          dest: /home/ubuntu/flask-app/app.py
+          dest: /home/ubuntu/app2.py
+          owner: ubuntu
+            #          mode: '0755'
+          mode: '0644'
+
+
+            #      - name: Start and execute Flask app
+            #        shell: flask run -h 0.0.0.0 -p 5000
+            #        async: 500
+            #        poll: 0
+      - name: run Flask app
+        shell: gunicorn -w 2 -D -b 0.0.0.0:5000 app2:app
+
+
+
+  - hosts: HAproxy
+    become: true
+
+    tasks:
+
+      - name: apt update
+        apt:
+          update_cache: yes
+
+      - name: Installing HAPROXY
+        apt:
+          name: haproxy
+          state: present
+
+      - name: Configure haproxy
+        template:
+          src: /$PWD/haproxy.cfg.j2
+          dest: /etc/haproxy/haproxy.cfg
+
+      - name: Restart haproxy
+        service:
+          name: haproxy
+          state: restarted

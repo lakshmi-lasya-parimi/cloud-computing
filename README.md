@@ -1,2 +1,2 @@
 # cloud-computing
-Develop and deploy web application on cloud platform
+Develop and deploy flask application on cloud platform
